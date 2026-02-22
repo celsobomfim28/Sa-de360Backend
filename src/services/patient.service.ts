@@ -588,7 +588,7 @@ export class PatientService {
         const today = new Date();
         const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
 
-        const eligibilityGroups = [];
+        const eligibilityGroups: string[] = [];
         if (patient.isChild) eligibilityGroups.push('CHILD');
         if (patient.isPregnant) eligibilityGroups.push('PREGNANT');
         if (patient.isPostpartum) eligibilityGroups.push('POSTPARTUM');
@@ -648,7 +648,7 @@ export class PatientService {
         const today = new Date();
         const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
 
-        const eligibilityGroups = [];
+        const eligibilityGroups: string[] = [];
         if (patient.isChild) eligibilityGroups.push('CHILD');
         if (patient.isPregnant) eligibilityGroups.push('PREGNANT');
         if (patient.isPostpartum) eligibilityGroups.push('POSTPARTUM');
@@ -741,4 +741,5 @@ export class PatientService {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
 

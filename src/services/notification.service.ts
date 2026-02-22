@@ -638,7 +638,7 @@ export class NotificationService {
     });
 
     for (const indicator of criticalIndicators) {
-      const criticalFields = [];
+      const criticalFields: string[] = [];
       if (indicator.c1Status === 'RED') criticalFields.push('C1');
       if (indicator.c2Status === 'RED') criticalFields.push('C2');
       if (indicator.c3Status === 'RED') criticalFields.push('C3');
@@ -672,6 +672,7 @@ export class NotificationService {
     };
   }
 }
+
 
 
 

@@ -19,7 +19,7 @@ export class DiabetesService {
         } = data;
 
         // 1. Create the consultation record
-        let imc = null;
+        let imc: number | null = null;
         if (weight && height) {
             imc = weight / ((height / 100) * (height / 100));
         }
@@ -201,6 +201,7 @@ export class DiabetesService {
         }
     }
 }
+
 
 
 
