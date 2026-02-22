@@ -1,0 +1,590 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["windows"]
+  engineType    = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  @@map("appointments")
+}
+
+model Appointment {
+  id                                            String            @id
+  patientId                                     String
+  professionalId                                String
+  scheduledDate                                 DateTime
+  type                                          AppointmentType
+  status                                        AppointmentStatus @default(SCHEDULED)
+  observations                                  String?
+  checkedInAt                                   DateTime?
+  absenceReason                                 String?
+  absenceReportedById                           String?
+  absenceReportedAt                             DateTime?
+  noticeGiven                                   Boolean           @default(false)
+  noticeGivenAt                                 DateTime?
+  noticeGivenById                               String?
+  createdAt                                     DateTime          @default(now())
+  updatedAt                                     DateTime
+  users_appointments_absenceReportedByIdTousers users?            @relation("appointments_absenceReportedByIdTousers", fields: [absenceReportedById], references: [id])
+  users_appointments_noticeGivenByIdTousers     users?            @relation("appointments_noticeGivenByIdTousers", fields: [noticeGivenById], references: [id])
+  patients                                      patients          @relation(fields: [patientId], references: [id])
+  users_appointments_professionalIdTousers      users             @relation("appointments_professionalIdTousers", fields: [professionalId], references: [id])
+  @@map("audit_logs")
+}
+
+model AuditLog {
+  id         String   @id
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  users      users    @relation(fields: [userId], references: [id])
+  @@map("childcare_consultations")
+}
+
+model ChildcareConsultation {
+  id                    String      @id
+  patientId             String
+  professionalId        String
+  consultationDate      DateTime
+  weight                Float
+  height                Float
+  headCircumference     Float?
+  developmentMilestones Json
+  feedingType           FeedingType
+  feedingObservations   String?
+  observations          String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime
+  patients              patients    @relation(fields: [patientId], references: [id])
+  users                 users       @relation(fields: [professionalId], references: [id])
+  @@map("childcare_indicators")
+}
+
+model ChildcareIndicator {
+  id                    String          @id
+  patientId             String          @unique
+  firstConsultationDate DateTime?
+  b1Status              IndicatorStatus
+  consultationCount     Int             @default(0)
+  b2Status              IndicatorStatus
+  anthropometryCount    Int             @default(0)
+  b3Status              IndicatorStatus
+  vd1Date               DateTime?
+  vd2Date               DateTime?
+  b4Status              IndicatorStatus
+  vaccineStatus         VaccineStatus
+  b5Status              IndicatorStatus
+  lastUpdated           DateTime
+  patients              patients        @relation(fields: [patientId], references: [id])
+  @@map("diabetes_consultations")
+}
+
+model DiabetesConsultation {
+  id                  String       @id
+  patientId           String
+  professionalId      String
+  consultationDate    DateTime
+  glucose             Float?
+  glucoseType         GlucoseType?
+  hba1c               Float?
+  footExamPerformed   Boolean      @default(false)
+  footExamResult      String?
+  weight              Float?
+  height              Float?
+  imc                 Float?
+  medicationAdherence Boolean      @default(true)
+  observations        String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime
+  patients            patients     @relation(fields: [patientId], references: [id])
+  users               users        @relation(fields: [professionalId], references: [id])
+  @@map("diabetes_indicators")
+}
+
+model DiabetesIndicator {
+  id                     String          @id
+  patientId              String          @unique
+  lastConsultationDate   DateTime?
+  d1Status               IndicatorStatus
+  lastBloodPressureDate  DateTime?
+  d2Status               IndicatorStatus
+  lastAnthropometryDate  DateTime?
+  d3Status               IndicatorStatus
+  visitCountLast12Months Int             @default(0)
+  d4Status               IndicatorStatus
+  lastHba1cDate          DateTime?
+  d5Status               IndicatorStatus
+  lastFootExamDate       DateTime?
+  d6Status               IndicatorStatus
+  lastUpdated            DateTime
+  patients               patients        @relation(fields: [patientId], references: [id])
+  @@map("elderly_consultations")
+}
+
+model ElderlyConsultation {
+  id               String   @id
+  patientId        String
+  professionalId   String
+  consultationDate DateTime
+  ivcfScore        Int?
+  isVulnerable     Boolean  @default(false)
+  medicationsCount Int      @default(0)
+  medicationsList  String?
+  observations     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  patients         patients @relation(fields: [patientId], references: [id])
+  users            users    @relation(fields: [professionalId], references: [id])
+  @@map("elderly_indicators")
+}
+
+model ElderlyIndicator {
+  id                      String          @id
+  patientId               String          @unique
+  hasPolypharmacy         Boolean         @default(false)
+  polypharmacyUpdatedDate DateTime?
+  f1Status                IndicatorStatus
+  lastIvcfDate            DateTime?
+  ivcfScore               Int?
+  f2Status                IndicatorStatus
+  lastUpdated             DateTime
+  patients                patients        @relation(fields: [patientId], references: [id])
+  @@map("home_visits")
+}
+
+model HomeVisit {
+  id           String        @id
+  patientId    String
+  acsId        String
+  visitDate    DateTime
+  visitType    HomeVisitType
+  purpose      String
+  observations String?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  users        users         @relation(fields: [acsId], references: [id])
+  patients     patients      @relation(fields: [patientId], references: [id])
+  @@map("hypertension_consultations")
+}
+
+model HypertensionConsultation {
+  id                  String   @id
+  patientId           String
+  professionalId      String
+  consultationDate    DateTime
+  systolicBP          Int
+  diastolicBP         Int
+  heartRate           Int?
+  weight              Float?
+  height              Float?
+  imc                 Float?
+  medicationAdherence Boolean  @default(true)
+  observations        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime
+  patients            patients @relation(fields: [patientId], references: [id])
+  users               users    @relation(fields: [professionalId], references: [id])
+  @@map("hypertension_indicators")
+}
+
+model HypertensionIndicator {
+  id                     String          @id
+  patientId              String          @unique
+  lastConsultationDate   DateTime?
+  e1Status               IndicatorStatus
+  lastBloodPressureDate  DateTime?
+  e2Status               IndicatorStatus
+  lastAnthropometryDate  DateTime?
+  e3Status               IndicatorStatus
+  visitCountLast12Months Int             @default(0)
+  e4Status               IndicatorStatus
+  lastUpdated            DateTime
+  patients               patients        @relation(fields: [patientId], references: [id])
+  @@map("micro_areas")
+}
+
+model MicroArea {
+  id          String     @id
+  name        String
+  code        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  patients    patients[]
+  users       users[]
+  @@map("patients")
+}
+
+model Patient {
+  id                         String                       @id
+  cpf                        String                       @unique
+  cns                        String                       @unique
+  fullName                   String
+  birthDate                  DateTime
+  sex                        Sex
+  motherName                 String
+  street                     String
+  number                     String
+  complement                 String?
+  neighborhood               String
+  zipCode                    String
+  referencePoint             String?
+  microAreaId                String
+  primaryPhone               String
+  secondaryPhone             String?
+  email                      String?
+  isChild                    Boolean                      @default(false)
+  isPregnant                 Boolean                      @default(false)
+  isPostpartum               Boolean                      @default(false)
+  hasHypertension            Boolean                      @default(false)
+  hypertensionDiagnosisDate  DateTime?
+  hasDiabetes                Boolean                      @default(false)
+  diabetesDiagnosisDate      DateTime?
+  isElderly                  Boolean                      @default(false)
+  isWoman                    Boolean                      @default(false)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime
+  deletedAt                  DateTime?
+  createdById                String
+  appointments               appointments[]
+  childcare_consultations    childcare_consultations[]
+  childcare_indicators       childcare_indicators?
+  diabetes_consultations     diabetes_consultations[]
+  diabetes_indicators        diabetes_indicators?
+  elderly_consultations      elderly_consultations[]
+  elderly_indicators         elderly_indicators?
+  home_visits                home_visits[]
+  hypertension_consultations hypertension_consultations[]
+  hypertension_indicators    hypertension_indicators?
+  users                      users                        @relation(fields: [createdById], references: [id])
+  micro_areas                micro_areas                  @relation(fields: [microAreaId], references: [id])
+  postpartum_consultations   postpartum_consultations[]
+  prenatal_data              prenatal_data?
+  vaccine_records            vaccine_records[]
+  woman_exams                woman_exams[]
+  woman_health_indicators    woman_health_indicators?
+  @@map("postpartum_consultations")
+}
+
+model PostpartumConsultation {
+  id                  String              @id
+  patientId           String
+  professionalId      String
+  consultationDate    DateTime
+  deliveryDate        DateTime
+  deliveryType        DeliveryType
+  weight              Float
+  bloodPressure       String
+  uterineInvolution   InvolutionStatus
+  lochia              LochiaStatus
+  breastfeeding       BreastfeedingStatus
+  contraceptiveMethod String?
+  observations        String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime
+  patients            patients            @relation(fields: [patientId], references: [id])
+  users               users               @relation(fields: [professionalId], references: [id])
+  @@map("prenatal_consultations")
+}
+
+model PrenatalConsultation {
+  id               String        @id
+  prenatalDataId   String
+  professionalId   String
+  consultationDate DateTime
+  gestationalAge   Int
+  weight           Float
+  height           Float?
+  bloodPressure    String
+  uterineHeight    Float?
+  fetalHeartRate   Int?
+  edema            Boolean       @default(false)
+  complaints       String?
+  conduct          String?
+  observations     String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  prenatal_data    prenatal_data @relation(fields: [prenatalDataId], references: [id])
+  users            users         @relation(fields: [professionalId], references: [id])
+  @@map("prenatal_data")
+}
+
+model PrenatalData {
+  id                     String                   @id
+  patientId              String                   @unique
+  lastMenstrualDate      DateTime
+  expectedDeliveryDate   DateTime
+  gestationalAge         Int
+  isHighRisk             Boolean                  @default(false)
+  previousPregnancies    Int
+  previousDeliveries     Int
+  previousAbortions      Int
+  deliveryDate           DateTime?
+  deliveryType           DeliveryType?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  prenatal_consultations prenatal_consultations[]
+  patients               patients                 @relation(fields: [patientId], references: [id])
+  prenatal_exams         prenatal_exams[]
+  prenatal_indicators    prenatal_indicators?
+  @@map("prenatal_exams")
+}
+
+model PrenatalExam {
+  id             String           @id
+  prenatalDataId String
+  examType       PrenatalExamType
+  requestDate    DateTime
+  resultDate     DateTime?
+  result         String?
+  evaluated      Boolean          @default(false)
+  evaluatedById  String?
+  evaluatedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  users          users?           @relation(fields: [evaluatedById], references: [id])
+  prenatal_data  prenatal_data    @relation(fields: [prenatalDataId], references: [id])
+  @@map("prenatal_indicators")
+}
+
+model PrenatalIndicator {
+  id                         String          @id
+  prenatalDataId             String          @unique
+  prenatalConsultationCount  Int             @default(0)
+  postpartumConsultationDone Boolean         @default(false)
+  c1Status                   IndicatorStatus
+  bloodPressureCount         Int             @default(0)
+  c2Status                   IndicatorStatus
+  weightHeightRecorded       Boolean         @default(false)
+  c3Status                   IndicatorStatus
+  vd1Date                    DateTime?
+  vd2Date                    DateTime?
+  vd3Date                    DateTime?
+  vdPostpartumDate           DateTime?
+  c4Status                   IndicatorStatus
+  dtpaVaccineDate            DateTime?
+  c5Status                   IndicatorStatus
+  exams1stTriCompleted       Boolean         @default(false)
+  exams3rdTriCompleted       Boolean         @default(false)
+  c6Status                   IndicatorStatus
+  lastUpdated                DateTime
+  prenatal_data              prenatal_data   @relation(fields: [prenatalDataId], references: [id])
+  @@map("users")
+}
+
+model User {
+  id                                                   String                       @id
+  cpf                                                  String                       @unique
+  fullName                                             String
+  email                                                String?                      @unique
+  password                                             String
+  role                                                 UserRole
+  isActive                                             Boolean                      @default(true)
+  microAreaId                                          String?
+  createdAt                                            DateTime                     @default(now())
+  updatedAt                                            DateTime
+  deletedAt                                            DateTime?
+  appointments_appointments_absenceReportedByIdTousers appointments[]               @relation("appointments_absenceReportedByIdTousers")
+  appointments_appointments_noticeGivenByIdTousers     appointments[]               @relation("appointments_noticeGivenByIdTousers")
+  appointments_appointments_professionalIdTousers      appointments[]               @relation("appointments_professionalIdTousers")
+  audit_logs                                           audit_logs[]
+  childcare_consultations                              childcare_consultations[]
+  diabetes_consultations                               diabetes_consultations[]
+  elderly_consultations                                elderly_consultations[]
+  home_visits                                          home_visits[]
+  hypertension_consultations                           hypertension_consultations[]
+  patients                                             patients[]
+  postpartum_consultations                             postpartum_consultations[]
+  prenatal_consultations                               prenatal_consultations[]
+  prenatal_exams                                       prenatal_exams[]
+  micro_areas                                          micro_areas?                 @relation(fields: [microAreaId], references: [id])
+  vaccine_records                                      vaccine_records[]
+  woman_exams                                          woman_exams[]
+  @@map("vaccine_records")
+  @@map("vaccines")
+}
+
+model VaccineRecord {
+  id              String   @id
+  patientId       String
+  vaccineId       String
+  applicationDate DateTime
+  dose            Int
+  batchNumber     String?
+  appliedById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  users           users    @relation(fields: [appliedById], references: [id])
+  patients        patients @relation(fields: [patientId], references: [id])
+  vaccines        vaccines @relation(fields: [vaccineId], references: [id])
+  @@map("vaccines")
+}
+
+model Vaccine {
+  id              String            @id
+  name            String            @unique
+  description     String?
+  ageSchedule     Json
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  vaccine_records vaccine_records[]
+  @@map("woman_exams")
+}
+
+model WomanExam {
+  id            String        @id
+  patientId     String
+  type          WomanExamType
+  examDate      DateTime
+  result        String?
+  observations  String?
+  performedById String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  patients      patients      @relation(fields: [patientId], references: [id])
+  users         users?        @relation(fields: [performedById], references: [id])
+  @@map("woman_health_indicators")
+}
+
+model WomanHealthIndicator {
+  id                  String          @id
+  patientId           String          @unique
+  lastPapSmearDate    DateTime?
+  g1Status            IndicatorStatus
+  lastMammographyDate DateTime?
+  g2Status            IndicatorStatus
+  lastUpdated         DateTime
+  patients            patients        @relation(fields: [patientId], references: [id])
+  @@map("woman_health_indicators")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  ABSENT
+  CANCELLED
+  RESCHEDULED
+  @@map("woman_health_indicators")
+}
+
+enum AppointmentType {
+  PRENATAL
+  CHILDCARE
+  HYPERTENSION
+  DIABETES
+  ROUTINE
+  POSTPARTUM
+  ELDERLY_CARE
+  WOMAN_HEALTH
+  @@map("woman_health_indicators")
+}
+
+enum BreastfeedingStatus {
+  YES
+  NO
+  WITH_DIFFICULTIES
+  @@map("woman_health_indicators")
+}
+
+enum DeliveryType {
+  VAGINAL
+  CESAREAN
+  @@map("woman_health_indicators")
+}
+
+enum FeedingType {
+  EXCLUSIVE_BREASTFEEDING
+  COMPLEMENTARY_FEEDING
+  ARTIFICIAL_FEEDING
+  MIXED_FEEDING
+  @@map("woman_health_indicators")
+}
+
+enum GlucoseType {
+  FASTING
+  POSTPRANDIAL
+  CASUAL
+  @@map("woman_health_indicators")
+}
+
+enum HomeVisitType {
+  NEWBORN_VD1
+  NEWBORN_VD2
+  PREGNANT_VD1
+  PREGNANT_VD2
+  PREGNANT_VD3
+  POSTPARTUM_VD
+  ACTIVE_SEARCH
+  ROUTINE
+  @@map("woman_health_indicators")
+}
+
+enum IndicatorStatus {
+  GREEN
+  YELLOW
+  RED
+  @@map("woman_health_indicators")
+}
+
+enum InvolutionStatus {
+  ADEQUATE
+  INADEQUATE
+  @@map("woman_health_indicators")
+}
+
+enum LochiaStatus {
+  NORMAL
+  ALTERED
+  @@map("woman_health_indicators")
+}
+
+enum PrenatalExamType {
+  SYPHILIS_1ST_TRI
+  HIV_1ST_TRI
+  HEPATITIS_B_1ST_TRI
+  HEPATITIS_C_1ST_TRI
+  SYPHILIS_3RD_TRI
+  HIV_3RD_TRI
+  @@map("woman_health_indicators")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  @@map("woman_health_indicators")
+}
+
+enum UserRole {
+  ACS
+  TECNICO_ENFERMAGEM
+  ENFERMEIRO
+  MEDICO
+  ADMIN
+  @@map("woman_health_indicators")
+}
+
+enum VaccineStatus {
+  UP_TO_DATE
+  DELAYED
+  NOT_STARTED
+  @@map("woman_health_indicators")
+}
+
+enum WomanExamType {
+  PAP_SMEAR
+  MAMMOGRAPHY
+}
+
+
