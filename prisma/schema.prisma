@@ -10,7 +10,7 @@ datasource db {
 }
 
 model appointments {
-  id                                            String            @id
+  id                                            String            @id @default(uuid())
   patientId                                     String
   professionalId                                String?
   scheduledDate                                 DateTime
@@ -26,7 +26,7 @@ model appointments {
   noticeGivenAt                                 DateTime?
   noticeGivenById                               String?
   createdAt                                     DateTime          @default(now())
-  updatedAt                                     DateTime
+  updatedAt                                     DateTime          @updatedAt
   users_appointments_absenceReportedByIdTousers users?            @relation("appointments_absenceReportedByIdTousers", fields: [absenceReportedById], references: [id])
   users_appointments_noticeGivenByIdTousers     users?            @relation("appointments_noticeGivenByIdTousers", fields: [noticeGivenById], references: [id])
   patients                                      patients          @relation(fields: [patientId], references: [id])
@@ -34,7 +34,7 @@ model appointments {
 }
 
 model audit_logs {
-  id         String   @id
+  id         String   @id @default(uuid())
   userId     String
   action     String
   entityType String
@@ -48,7 +48,7 @@ model audit_logs {
 }
 
 model childcare_consultations {
-  id                    String      @id
+  id                    String      @id @default(uuid())
   patientId             String
   professionalId        String
   consultationDate      DateTime
@@ -60,13 +60,13 @@ model childcare_consultations {
   feedingObservations   String?
   observations          String?
   createdAt             DateTime    @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime    @updatedAt
   patients              patients    @relation(fields: [patientId], references: [id])
   users                 users       @relation(fields: [professionalId], references: [id])
 }
 
 model childcare_indicators {
-  id                    String          @id
+  id                    String          @id @default(uuid())
   patientId             String          @unique
   firstConsultationDate DateTime?
   b1Status              IndicatorStatus
@@ -79,12 +79,12 @@ model childcare_indicators {
   b4Status              IndicatorStatus
   vaccineStatus         VaccineStatus
   b5Status              IndicatorStatus
-  lastUpdated           DateTime
+  lastUpdated           DateTime        @updatedAt
   patients              patients        @relation(fields: [patientId], references: [id])
 }
 
 model diabetes_consultations {
-  id                  String       @id
+  id                  String       @id @default(uuid())
   patientId           String
   professionalId      String
   consultationDate    DateTime
@@ -99,13 +99,13 @@ model diabetes_consultations {
   medicationAdherence Boolean      @default(true)
   observations        String?
   createdAt           DateTime     @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime     @updatedAt
   patients            patients     @relation(fields: [patientId], references: [id])
   users               users        @relation(fields: [professionalId], references: [id])
 }
 
 model diabetes_indicators {
-  id                     String          @id
+  id                     String          @id @default(uuid())
   patientId              String          @unique
   lastConsultationDate   DateTime?
   d1Status               IndicatorStatus
@@ -119,12 +119,12 @@ model diabetes_indicators {
   d5Status               IndicatorStatus
   lastFootExamDate       DateTime?
   d6Status               IndicatorStatus
-  lastUpdated            DateTime
+  lastUpdated            DateTime        @updatedAt
   patients               patients        @relation(fields: [patientId], references: [id])
 }
 
 model elderly_consultations {
-  id               String   @id
+  id               String   @id @default(uuid())
   patientId        String
   professionalId   String
   consultationDate DateTime
@@ -134,13 +134,13 @@ model elderly_consultations {
   medicationsList  String?
   observations     String?
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   patients         patients @relation(fields: [patientId], references: [id])
   users            users    @relation(fields: [professionalId], references: [id])
 }
 
 model elderly_indicators {
-  id                       String          @id
+  id                       String          @id @default(uuid())
   patientId                String          @unique
   lastConsultationDate     DateTime?
   aStatus                  IndicatorStatus @default(RED)
@@ -156,12 +156,12 @@ model elderly_indicators {
   c3Status                 IndicatorStatus @default(RED)
   lastInfluenzaVaccineDate DateTime?
   dStatus                  IndicatorStatus @default(RED)
-  lastUpdated              DateTime
+  lastUpdated              DateTime        @updatedAt
   patients                 patients        @relation(fields: [patientId], references: [id])
 }
 
 model home_visits {
-  id           String        @id
+  id           String        @id @default(uuid())
   patientId    String
   acsId        String
   visitDate    DateTime
@@ -171,13 +171,13 @@ model home_visits {
   latitude     Float?
   longitude    Float?
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime      @updatedAt
   users        users         @relation(fields: [acsId], references: [id])
   patients     patients      @relation(fields: [patientId], references: [id])
 }
 
 model hypertension_consultations {
-  id                  String   @id
+  id                  String   @id @default(uuid())
   patientId           String
   professionalId      String
   consultationDate    DateTime
@@ -190,13 +190,13 @@ model hypertension_consultations {
   medicationAdherence Boolean  @default(true)
   observations        String?
   createdAt           DateTime @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
   patients            patients @relation(fields: [patientId], references: [id])
   users               users    @relation(fields: [professionalId], references: [id])
 }
 
 model hypertension_indicators {
-  id                     String          @id
+  id                     String          @id @default(uuid())
   patientId              String          @unique
   lastConsultationDate   DateTime?
   e1Status               IndicatorStatus
@@ -206,17 +206,17 @@ model hypertension_indicators {
   e3Status               IndicatorStatus
   visitCountLast12Months Int             @default(0)
   e4Status               IndicatorStatus
-  lastUpdated            DateTime
+  lastUpdated            DateTime        @updatedAt
   patients               patients        @relation(fields: [patientId], references: [id])
 }
 
 model micro_areas {
-  id          String     @id
+  id          String     @id @default(uuid())
   name        String
   code        String     @unique
   description String?
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime   @updatedAt
   patients    patients[]
   users       users[]
 }
@@ -279,7 +279,7 @@ model patients {
 }
 
 model postpartum_consultations {
-  id                  String              @id
+  id                  String              @id @default(uuid())
   patientId           String
   professionalId      String
   consultationDate    DateTime
@@ -293,13 +293,13 @@ model postpartum_consultations {
   contraceptiveMethod String?
   observations        String?
   createdAt           DateTime            @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime            @updatedAt
   patients            patients            @relation(fields: [patientId], references: [id])
   users               users               @relation(fields: [professionalId], references: [id])
 }
 
 model prenatal_consultations {
-  id               String        @id
+  id               String        @id @default(uuid())
   prenatalDataId   String
   professionalId   String
   consultationDate DateTime
@@ -314,13 +314,13 @@ model prenatal_consultations {
   conduct          String?
   observations     String?
   createdAt        DateTime      @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime      @updatedAt
   prenatal_data    prenatal_data @relation(fields: [prenatalDataId], references: [id])
   users            users         @relation(fields: [professionalId], references: [id])
 }
 
 model prenatal_data {
-  id                     String                   @id
+  id                     String                   @id @default(uuid())
   patientId              String                   @unique
   lastMenstrualDate      DateTime
   expectedDeliveryDate   DateTime
@@ -332,7 +332,7 @@ model prenatal_data {
   deliveryDate           DateTime?
   deliveryType           DeliveryType?
   createdAt              DateTime                 @default(now())
-  updatedAt              DateTime
+  updatedAt              DateTime                 @updatedAt
   prenatal_consultations prenatal_consultations[]
   patients               patients                 @relation(fields: [patientId], references: [id])
   prenatal_exams         prenatal_exams[]
@@ -340,7 +340,7 @@ model prenatal_data {
 }
 
 model prenatal_exams {
-  id             String           @id
+  id             String           @id @default(uuid())
   prenatalDataId String
   examType       PrenatalExamType
   requestDate    DateTime
@@ -350,13 +350,13 @@ model prenatal_exams {
   evaluatedById  String?
   evaluatedAt    DateTime?
   createdAt      DateTime         @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime         @updatedAt
   users          users?           @relation(fields: [evaluatedById], references: [id])
   prenatal_data  prenatal_data    @relation(fields: [prenatalDataId], references: [id])
 }
 
 model prenatal_indicators {
-  id                         String          @id
+  id                         String          @id @default(uuid())
   prenatalDataId             String          @unique
   prenatalConsultationCount  Int             @default(0)
   postpartumConsultationDone Boolean         @default(false)
@@ -375,12 +375,12 @@ model prenatal_indicators {
   exams1stTriCompleted       Boolean         @default(false)
   exams3rdTriCompleted       Boolean         @default(false)
   c6Status                   IndicatorStatus
-  lastUpdated                DateTime
+  lastUpdated                DateTime        @updatedAt
   prenatal_data              prenatal_data   @relation(fields: [prenatalDataId], references: [id])
 }
 
 model users {
-  id                                                   String                       @id
+  id                                                   String                       @id @default(uuid())
   cpf                                                  String                       @unique
   fullName                                             String
   email                                                String?                      @unique
@@ -389,7 +389,7 @@ model users {
   isActive                                             Boolean                      @default(true)
   microAreaId                                          String?
   createdAt                                            DateTime                     @default(now())
-  updatedAt                                            DateTime
+  updatedAt                                            DateTime                     @updatedAt
   deletedAt                                            DateTime?
   appointments_appointments_absenceReportedByIdTousers appointments[]               @relation("appointments_absenceReportedByIdTousers")
   appointments_appointments_noticeGivenByIdTousers     appointments[]               @relation("appointments_noticeGivenByIdTousers")
@@ -416,7 +416,7 @@ model users {
 }
 
 model vaccine_records {
-  id              String   @id
+  id              String   @id @default(uuid())
   patientId       String
   vaccineId       String
   applicationDate DateTime
@@ -424,24 +424,24 @@ model vaccine_records {
   batchNumber     String?
   appliedById     String
   createdAt       DateTime @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   users           users    @relation(fields: [appliedById], references: [id])
   patients        patients @relation(fields: [patientId], references: [id])
   vaccines        vaccines @relation(fields: [vaccineId], references: [id])
 }
 
 model vaccines {
-  id              String            @id
+  id              String            @id @default(uuid())
   name            String            @unique
   description     String?
   ageSchedule     Json
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   vaccine_records vaccine_records[]
 }
 
 model woman_exams {
-  id            String        @id
+  id            String        @id @default(uuid())
   patientId     String
   type          WomanExamType
   examDate      DateTime
@@ -449,13 +449,13 @@ model woman_exams {
   observations  String?
   performedById String?
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime      @updatedAt
   patients      patients      @relation(fields: [patientId], references: [id])
   users         users?        @relation(fields: [performedById], references: [id])
 }
 
 model woman_health_indicators {
-  id                              String          @id
+  id                              String          @id @default(uuid())
   patientId                       String          @unique
   lastPapSmearDate                DateTime?
   g1Status                        IndicatorStatus
@@ -465,7 +465,7 @@ model woman_health_indicators {
   cStatus                         IndicatorStatus @default(RED)
   lastHpvVaccineDate              DateTime?
   bStatus                         IndicatorStatus @default(RED)
-  lastUpdated                     DateTime
+  lastUpdated                     DateTime        @updatedAt
   patients                        patients        @relation(fields: [patientId], references: [id])
 }
 
@@ -708,7 +708,7 @@ enum LabExamType {
 }
 
 model anthropometry {
-  id              String   @id
+  id              String   @id @default(uuid())
   patientId       String
   professionalId  String
   measurementDate DateTime
@@ -716,7 +716,7 @@ model anthropometry {
   height          Float?
   imc             Float?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   patients        patients @relation(fields: [patientId], references: [id])
   users           users    @relation(fields: [professionalId], references: [id])
 
@@ -724,14 +724,14 @@ model anthropometry {
 }
 
 model blood_pressure {
-  id              String   @id
+  id              String   @id @default(uuid())
   patientId       String
   professionalId  String
   measurementDate DateTime
   systolicBP      Int
   diastolicBP     Int
   createdAt       DateTime @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   patients        patients @relation(fields: [patientId], references: [id])
   users           users    @relation(fields: [professionalId], references: [id])
 
@@ -739,14 +739,14 @@ model blood_pressure {
 }
 
 model glucose_measurement {
-  id              String   @id
+  id              String   @id @default(uuid())
   patientId       String
   professionalId  String
   measurementDate DateTime
   glucose         Float
   glucoseType     GlucoseType?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   patients        patients @relation(fields: [patientId], references: [id])
   users           users    @relation(fields: [professionalId], references: [id])
 

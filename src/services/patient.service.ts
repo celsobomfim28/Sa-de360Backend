@@ -87,6 +87,7 @@ export class PatientService {
 
             const prenatalData = await prisma.prenatal_data.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     lastMenstrualDate,
                     expectedDeliveryDate,
@@ -95,12 +96,14 @@ export class PatientService {
                     previousPregnancies: 0,
                     previousDeliveries: 0,
                     previousAbortions: 0,
+                    updatedAt: new Date(),
                 },
             });
 
             // Criar indicador de pré-natal
             await prisma.prenatal_indicators.create({
                 data: {
+                    id: randomUUID(),
                     prenatalDataId: prenatalData.id,
                     c1Status: 'RED',
                     c2Status: 'RED',
@@ -108,6 +111,7 @@ export class PatientService {
                     c4Status: 'RED',
                     c5Status: 'RED',
                     c6Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -116,6 +120,7 @@ export class PatientService {
         if (isChild) {
             await prisma.childcare_indicators.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     b1Status: 'RED',
                     b2Status: 'RED',
@@ -123,6 +128,7 @@ export class PatientService {
                     b4Status: 'RED',
                     vaccineStatus: 'NOT_STARTED',
                     b5Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -131,6 +137,7 @@ export class PatientService {
         if (eligibilityCriteria.hasDiabetes) {
             await prisma.diabetes_indicators.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     d1Status: 'RED',
                     d2Status: 'RED',
@@ -138,6 +145,7 @@ export class PatientService {
                     d4Status: 'RED',
                     d5Status: 'RED',
                     d6Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -146,11 +154,13 @@ export class PatientService {
         if (eligibilityCriteria.hasHypertension) {
             await prisma.hypertension_indicators.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     e1Status: 'RED',
                     e2Status: 'RED',
                     e3Status: 'RED',
                     e4Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -159,9 +169,11 @@ export class PatientService {
         if (isElderly) {
             await prisma.elderly_indicators.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     f1Status: 'RED',
                     f2Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -170,9 +182,11 @@ export class PatientService {
         if (isWoman) {
             await prisma.woman_health_indicators.create({
                 data: {
+                    id: randomUUID(),
                     patientId: patient.id,
                     g1Status: 'RED',
                     g2Status: 'RED',
+                    lastUpdated: new Date(),
                 },
             });
         }
@@ -772,6 +786,7 @@ export class PatientService {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
 
 
 
