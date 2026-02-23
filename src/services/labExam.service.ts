@@ -1,23 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-
-type LabExamType = string;
-type ExamPriority = 'ROUTINE' | 'URGENT' | 'EMERGENCY';
-type ExamRequestStatus = 'PENDING' | 'COLLECTED' | 'IN_ANALYSIS' | 'COMPLETED' | 'CANCELLED';
-type ExamInterpretation = 'NORMAL' | 'ALTERED' | 'CRITICAL';
-
-const prisma = new PrismaClient();
-const prismaAny = prisma as any;
+import { ExamInterpretation, ExamPriority, ExamRequestStatus, LabExamType } from '@prisma/client';
+import { prisma } from '../config/database';
+import { AppError } from '../middlewares/errorHandler';
 
 export class LabExamService {
-  private ensureLabExamModuleAvailable() {
-    const hasRequestsModel = typeof prismaAny.labExamRequest?.findMany === 'function';
-    const hasExamModel = typeof prismaAny.labExam?.findMany === 'function';
-
-    if (!hasRequestsModel || !hasExamModel) {
-      throw new Error('Módulo de exames laboratoriais não está configurado no banco de dados atual');
-    }
-  }
-
   /**
    * Criar solicitação de exames
    */
@@ -28,9 +13,7 @@ export class LabExamService {
     priority?: ExamPriority;
     clinicalInfo?: string;
   }) {
-    this.ensureLabExamModuleAvailable();
-
-    const request = await prismaAny.labExamRequest.create({
+    const request = await prisma.lab_exam_requests.create({
       data: {
         patientId: data.patientId,
         requestedById: data.requestedById,
@@ -75,8 +58,6 @@ export class LabExamService {
     startDate?: Date;
     endDate?: Date;
   }) {
-    this.ensureLabExamModuleAvailable();
-
     const where: any = {};
 
     if (filters?.patientId) {
@@ -97,7 +78,7 @@ export class LabExamService {
       }
     }
 
-    return await prismaAny.labExamRequest.findMany({
+    return await prisma.lab_exam_requests.findMany({
       where,
       include: {
         patient: {
@@ -137,9 +118,7 @@ export class LabExamService {
    * Obter detalhes de uma solicitação
    */
   async getExamRequest(requestId: string) {
-    this.ensureLabExamModuleAvailable();
-
-    const request = await prismaAny.labExamRequest.findUnique({
+    const request = await prisma.lab_exam_requests.findUnique({
       where: { id: requestId },
       include: {
         patient: {
@@ -174,7 +153,7 @@ export class LabExamService {
     });
 
     if (!request) {
-      throw new Error('Solicitação de exame não encontrada');
+      throw new AppError(404, 'Solicitação de exame não encontrada', 'NOT_FOUND');
     }
 
     return request;
@@ -187,9 +166,7 @@ export class LabExamService {
     collectionDate: Date;
     collectedBy: string;
   }) {
-    this.ensureLabExamModuleAvailable();
-
-    const exam = await prismaAny.labExam.update({
+    const exam = await prisma.lab_exams.update({
       where: { id: examId },
       data: {
         collectionDate: data.collectionDate,
@@ -201,14 +178,14 @@ export class LabExamService {
     });
 
     // Atualizar status da solicitação se todos os exames foram coletados
-    const allExams = await prismaAny.labExam.findMany({
+    const allExams = await prisma.lab_exams.findMany({
       where: { requestId: exam.requestId }
     });
 
     const allCollected = allExams.every((e: any) => e.collectionDate !== null);
 
     if (allCollected) {
-      await prismaAny.labExamRequest.update({
+      await prisma.lab_exam_requests.update({
         where: { id: exam.requestId },
         data: { status: 'COLLECTED' }
       });
@@ -227,9 +204,7 @@ export class LabExamService {
     referenceRange?: string;
     interpretation?: ExamInterpretation;
   }) {
-    this.ensureLabExamModuleAvailable();
-
-    const exam = await prismaAny.labExam.update({
+    const exam = await prisma.lab_exams.update({
       where: { id: examId },
       data: {
         resultDate: data.resultDate,
@@ -244,14 +219,14 @@ export class LabExamService {
     });
 
     // Atualizar status da solicitação se todos os exames têm resultado
-    const allExams = await prismaAny.labExam.findMany({
+    const allExams = await prisma.lab_exams.findMany({
       where: { requestId: exam.requestId }
     });
 
     const allWithResults = allExams.every((e: any) => e.resultDate !== null);
 
     if (allWithResults) {
-      await prismaAny.labExamRequest.update({
+      await prisma.lab_exam_requests.update({
         where: { id: exam.requestId },
         data: { status: 'IN_ANALYSIS' }
       });
@@ -267,9 +242,7 @@ export class LabExamService {
     evaluatedById: string;
     observations?: string;
   }) {
-    this.ensureLabExamModuleAvailable();
-
-    const exam = await prismaAny.labExam.update({
+    const exam = await prisma.lab_exams.update({
       where: { id: examId },
       data: {
         evaluated: true,
@@ -290,14 +263,14 @@ export class LabExamService {
     });
 
     // Atualizar status da solicitação se todos os exames foram avaliados
-    const allExams = await prismaAny.labExam.findMany({
+    const allExams = await prisma.lab_exams.findMany({
       where: { requestId: exam.requestId }
     });
 
     const allEvaluated = allExams.every((e: any) => e.evaluated);
 
     if (allEvaluated) {
-      await prismaAny.labExamRequest.update({
+      await prisma.lab_exam_requests.update({
         where: { id: exam.requestId },
         data: { status: 'COMPLETED' }
       });
@@ -310,9 +283,7 @@ export class LabExamService {
    * Cancelar solicitação de exame
    */
   async cancelExamRequest(requestId: string) {
-    this.ensureLabExamModuleAvailable();
-
-    return await prismaAny.labExamRequest.update({
+    return await prisma.lab_exam_requests.update({
       where: { id: requestId },
       data: { status: 'CANCELLED' }
     });
@@ -322,13 +293,11 @@ export class LabExamService {
    * Obter histórico de exames do paciente
    */
   async getPatientExamHistory(patientId: string, examType?: LabExamType) {
-    this.ensureLabExamModuleAvailable();
-
     const where: any = {
       patientId
     };
 
-    const requests = await prismaAny.labExamRequest.findMany({
+    const requests = await prisma.lab_exam_requests.findMany({
       where,
       include: {
         requestedBy: {
@@ -363,9 +332,7 @@ export class LabExamService {
    * Obter exames pendentes de avaliação
    */
   async getPendingEvaluations() {
-    this.ensureLabExamModuleAvailable();
-
-    const exams = await prismaAny.labExam.findMany({
+    const exams = await prisma.lab_exams.findMany({
       where: {
         resultDate: { not: null },
         evaluated: false
@@ -406,8 +373,6 @@ export class LabExamService {
     startDate?: Date;
     endDate?: Date;
   }) {
-    this.ensureLabExamModuleAvailable();
-
     const where: any = {};
 
     if (filters?.startDate || filters?.endDate) {
@@ -429,13 +394,13 @@ export class LabExamService {
       cancelledRequests,
       pendingEvaluations
     ] = await Promise.all([
-      prismaAny.labExamRequest.count({ where }),
-      prismaAny.labExamRequest.count({ where: { ...where, status: 'PENDING' } }),
-      prismaAny.labExamRequest.count({ where: { ...where, status: 'COLLECTED' } }),
-      prismaAny.labExamRequest.count({ where: { ...where, status: 'IN_ANALYSIS' } }),
-      prismaAny.labExamRequest.count({ where: { ...where, status: 'COMPLETED' } }),
-      prismaAny.labExamRequest.count({ where: { ...where, status: 'CANCELLED' } }),
-      prismaAny.labExam.count({
+      prisma.lab_exam_requests.count({ where }),
+      prisma.lab_exam_requests.count({ where: { ...where, status: 'PENDING' } }),
+      prisma.lab_exam_requests.count({ where: { ...where, status: 'COLLECTED' } }),
+      prisma.lab_exam_requests.count({ where: { ...where, status: 'IN_ANALYSIS' } }),
+      prisma.lab_exam_requests.count({ where: { ...where, status: 'COMPLETED' } }),
+      prisma.lab_exam_requests.count({ where: { ...where, status: 'CANCELLED' } }),
+      prisma.lab_exams.count({
         where: {
           resultDate: { not: null },
           evaluated: false

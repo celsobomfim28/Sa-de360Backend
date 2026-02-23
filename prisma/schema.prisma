@@ -265,6 +265,7 @@ model patients {
   home_visits                home_visits[]
   hypertension_consultations hypertension_consultations[]
   hypertension_indicators    hypertension_indicators?
+  lab_exam_requests          lab_exam_requests[]
   users                      users                        @relation(fields: [createdById], references: [id])
   micro_areas                micro_areas                  @relation(fields: [microAreaId], references: [id])
   postpartum_consultations   postpartum_consultations[]
@@ -399,6 +400,8 @@ model users {
   elderly_consultations                                elderly_consultations[]
   home_visits                                          home_visits[]
   hypertension_consultations                           hypertension_consultations[]
+  lab_exam_requests_requested                          lab_exam_requests[]          @relation("lab_exam_requested_by")
+  lab_exams_evaluated                                  lab_exams[]                  @relation("lab_exam_evaluated_by")
   notifications                                        notifications[]
   patients                                             patients[]
   postpartum_consultations                             postpartum_consultations[]
@@ -464,6 +467,49 @@ model woman_health_indicators {
   bStatus                         IndicatorStatus @default(RED)
   lastUpdated                     DateTime
   patients                        patients        @relation(fields: [patientId], references: [id])
+}
+
+model lab_exam_requests {
+  id           String            @id @default(uuid())
+  patientId    String
+  requestedById String
+  requestDate  DateTime          @default(now())
+  priority     ExamPriority      @default(ROUTINE)
+  clinicalInfo String?
+  status       ExamRequestStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  patient      patients          @relation(fields: [patientId], references: [id])
+  requestedBy  users             @relation("lab_exam_requested_by", fields: [requestedById], references: [id])
+  exams        lab_exams[]
+
+  @@index([patientId, requestDate])
+  @@index([status])
+}
+
+model lab_exams {
+  id             String             @id @default(uuid())
+  requestId      String
+  examType       LabExamType
+  collectionDate DateTime?
+  collectedBy    String?
+  resultDate     DateTime?
+  result         Json?
+  resultText     String?
+  referenceRange String?
+  interpretation ExamInterpretation?
+  evaluated      Boolean            @default(false)
+  evaluatedById  String?
+  evaluatedAt    DateTime?
+  observations   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  request        lab_exam_requests  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  evaluatedBy    users?             @relation("lab_exam_evaluated_by", fields: [evaluatedById], references: [id])
+
+  @@index([requestId])
+  @@index([examType])
+  @@index([evaluated, resultDate])
 }
 
 enum AppointmentStatus {
@@ -602,6 +648,63 @@ enum NotificationType {
   INDICATOR_CRITICAL
   HOME_VISIT_SCHEDULED
   PATIENT_PRIORITY
+}
+
+enum ExamPriority {
+  ROUTINE
+  URGENT
+  EMERGENCY
+}
+
+enum ExamRequestStatus {
+  PENDING
+  COLLECTED
+  IN_ANALYSIS
+  COMPLETED
+  CANCELLED
+}
+
+enum ExamInterpretation {
+  NORMAL
+  ALTERED
+  CRITICAL
+}
+
+enum LabExamType {
+  HEMOGRAM
+  HEMOGLOBIN
+  HEMATOCRIT
+  PLATELETS
+  LEUKOCYTES
+  GLUCOSE
+  HBA1C
+  TOTAL_CHOLESTEROL
+  HDL_CHOLESTEROL
+  LDL_CHOLESTEROL
+  TRIGLYCERIDES
+  UREA
+  CREATININE
+  URIC_ACID
+  TGO_AST
+  TGP_ALT
+  BILIRUBIN
+  ALKALINE_PHOSPHATASE
+  TSH
+  T4_FREE
+  SYPHILIS_VDRL
+  HIV
+  HEPATITIS_B
+  HEPATITIS_C
+  TOXOPLASMOSIS
+  RUBELLA
+  URINALYSIS
+  URINE_CULTURE
+  STOOL_EXAM
+  STOOL_CULTURE
+  PSA
+  PREGNANCY_TEST
+  COVID_19
+  OTHER
 }
 
 model anthropometry {
