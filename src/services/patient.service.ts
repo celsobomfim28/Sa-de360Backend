@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { CreatePatientInput, UpdatePatientInput } from '../validators/patient.validator';
+import { randomUUID } from 'crypto';
 
 export class PatientService {
     async create(data: CreatePatientInput, createdById: string) {
@@ -35,6 +36,7 @@ export class PatientService {
 
         // Preparar dados para criação, removendo campos vazios opcionais
         const createData: any = {
+            id: randomUUID(),
             ...patientData,
             cpf: cleanCpf,
             cns: cleanCns || undefined,
@@ -54,6 +56,7 @@ export class PatientService {
             isChild: isChild || eligibilityCriteria.isChild,
             isElderly: isElderly || eligibilityCriteria.isElderly,
             isWoman: isWoman || eligibilityCriteria.isWoman,
+            updatedAt: new Date(),
             createdById,
         };
 
@@ -769,6 +772,7 @@ export class PatientService {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
 
 
 

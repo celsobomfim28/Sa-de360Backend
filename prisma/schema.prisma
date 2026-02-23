@@ -222,7 +222,7 @@ model micro_areas {
 }
 
 model patients {
-  id                         String                       @id
+  id                         String                       @id @default(uuid())
   cpf                        String?                      @unique
   cns                        String?                      @unique
   fullName                   String
@@ -252,7 +252,7 @@ model patients {
   isElderly                  Boolean                      @default(false)
   isWoman                    Boolean                      @default(false)
   createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime
+  updatedAt                  DateTime                     @updatedAt
   deletedAt                  DateTime?
   createdById                String
   appointments               appointments[]
