@@ -56,7 +56,9 @@ const eligibilityCriteriaSchema = z
 export const createPatientSchema = z.object({
     cpf: z
         .string()
-        .regex(/^\d{11}$|^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido'),
+        .regex(/^\d{11}$|^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido')
+        .optional()
+        .or(z.literal('')),
     cns: z.string().length(15, 'CNS deve ter 15 dígitos').optional().or(z.literal('')),
     fullName: z.string().min(3, 'Nome completo deve ter no mínimo 3 caracteres'),
     birthDate: z.string().datetime(),

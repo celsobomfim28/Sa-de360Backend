@@ -223,7 +223,7 @@ model micro_areas {
 
 model patients {
   id                         String                       @id
-  cpf                        String                       @unique
+  cpf                        String?                      @unique
   cns                        String                       @unique
   fullName                   String
   birthDate                  DateTime

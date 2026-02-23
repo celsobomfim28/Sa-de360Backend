@@ -7,7 +7,7 @@ export class PatientService {
         const { address, eligibilityCriteria, ...patientData } = data;
 
         // Remover formatação do CPF
-        const cleanCpf = patientData.cpf.replace(/\D/g, '');
+        const cleanCpf = patientData.cpf ? patientData.cpf.replace(/\D/g, '') : undefined;
 
         // Limpar CNS (remover espaços e formatação)
         const cleanCns = patientData.cns ? patientData.cns.replace(/\D/g, '') : undefined;
@@ -343,10 +343,23 @@ export class PatientService {
 
         const { address, eligibilityCriteria, ...patientData } = data;
 
+        const cleanCpf = patientData.cpf ? patientData.cpf.replace(/\D/g, '') : undefined;
+        const cleanCns = patientData.cns ? patientData.cns.replace(/\D/g, '') : undefined;
+
+        const normalizedPatientData: any = {
+            ...patientData,
+            cpf: cleanCpf,
+            cns: cleanCns || undefined,
+        };
+
+        if (patientData.cpf === '') {
+            normalizedPatientData.cpf = null;
+        }
+
         const updated = await prisma.patients.update({
             where: { id },
             data: {
-                ...patientData,
+                ...normalizedPatientData,
                 ...address,
                 ...eligibilityCriteria,
             },
@@ -737,9 +750,15 @@ export class PatientService {
         };
     }
 
-    private formatCpf(cpf: string): string {
+    private formatCpf(cpf?: string | null): string | null {
+        if (!cpf) {
+            return null;
+        }
+
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
+
 
 
