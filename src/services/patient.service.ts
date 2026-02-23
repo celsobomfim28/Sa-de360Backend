@@ -6,6 +6,19 @@ import { randomUUID } from 'crypto';
 export class PatientService {
     async create(data: CreatePatientInput, createdById: string) {
         const { address, eligibilityCriteria, ...patientData } = data;
+        const {
+            isChild: eligibilityIsChild,
+            isPregnant,
+            isPostpartum,
+            hasHypertension,
+            hypertensionDiagnosisDate,
+            hasDiabetes,
+            diabetesDiagnosisDate,
+            isElderly: eligibilityIsElderly,
+            isWoman: eligibilityIsWoman,
+            lastMenstrualDate,
+            deliveryDate,
+        } = eligibilityCriteria;
 
         const microArea = await prisma.micro_areas.findUnique({
             where: { id: data.microAreaId },
@@ -48,14 +61,15 @@ export class PatientService {
             complement: address.complement || undefined,
             zipCode: address.zipCode || undefined,
             referencePoint: address.referencePoint || undefined,
-            ...eligibilityCriteria,
-            lastMenstrualDate: eligibilityCriteria.lastMenstrualDate || undefined,
-            deliveryDate: eligibilityCriteria.deliveryDate || undefined,
-            hypertensionDiagnosisDate: eligibilityCriteria.hypertensionDiagnosisDate || undefined,
-            diabetesDiagnosisDate: eligibilityCriteria.diabetesDiagnosisDate || undefined,
-            isChild: isChild || eligibilityCriteria.isChild,
-            isElderly: isElderly || eligibilityCriteria.isElderly,
-            isWoman: isWoman || eligibilityCriteria.isWoman,
+            isChild: isChild || eligibilityIsChild,
+            isPregnant,
+            isPostpartum,
+            hasHypertension,
+            hypertensionDiagnosisDate: hypertensionDiagnosisDate || undefined,
+            hasDiabetes,
+            diabetesDiagnosisDate: diabetesDiagnosisDate || undefined,
+            isElderly: isElderly || eligibilityIsElderly,
+            isWoman: isWoman || eligibilityIsWoman,
             updatedAt: new Date(),
             createdById,
         };
@@ -78,24 +92,25 @@ export class PatientService {
         });
 
         // Se for gestante, criar dados de pré-natal
-        if (eligibilityCriteria.isPregnant && eligibilityCriteria.lastMenstrualDate) {
-            const lastMenstrualDate = new Date(eligibilityCriteria.lastMenstrualDate);
+        if (isPregnant && lastMenstrualDate) {
+            const parsedLastMenstrualDate = new Date(lastMenstrualDate);
             const expectedDeliveryDate = new Date(lastMenstrualDate);
             expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + 280); // DPP = DUM + 280 dias
 
-            const gestationalAge = Math.floor((today.getTime() - lastMenstrualDate.getTime()) / (1000 * 60 * 60 * 24));
+            const gestationalAge = Math.floor((today.getTime() - parsedLastMenstrualDate.getTime()) / (1000 * 60 * 60 * 24));
 
             const prenatalData = await prisma.prenatal_data.create({
                 data: {
                     id: randomUUID(),
                     patientId: patient.id,
-                    lastMenstrualDate,
+                    lastMenstrualDate: parsedLastMenstrualDate,
                     expectedDeliveryDate,
                     gestationalAge,
                     isHighRisk: false,
                     previousPregnancies: 0,
                     previousDeliveries: 0,
                     previousAbortions: 0,
+                    deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
                     updatedAt: new Date(),
                 },
             });
@@ -380,6 +395,26 @@ export class PatientService {
             cns: cleanCns || undefined,
         };
 
+        const normalizedEligibilityData = eligibilityCriteria
+            ? {
+                  ...(eligibilityCriteria.isChild !== undefined && { isChild: eligibilityCriteria.isChild }),
+                  ...(eligibilityCriteria.isPregnant !== undefined && { isPregnant: eligibilityCriteria.isPregnant }),
+                  ...(eligibilityCriteria.isPostpartum !== undefined && { isPostpartum: eligibilityCriteria.isPostpartum }),
+                  ...(eligibilityCriteria.hasHypertension !== undefined && {
+                      hasHypertension: eligibilityCriteria.hasHypertension,
+                  }),
+                  ...(eligibilityCriteria.hypertensionDiagnosisDate !== undefined && {
+                      hypertensionDiagnosisDate: eligibilityCriteria.hypertensionDiagnosisDate,
+                  }),
+                  ...(eligibilityCriteria.hasDiabetes !== undefined && { hasDiabetes: eligibilityCriteria.hasDiabetes }),
+                  ...(eligibilityCriteria.diabetesDiagnosisDate !== undefined && {
+                      diabetesDiagnosisDate: eligibilityCriteria.diabetesDiagnosisDate,
+                  }),
+                  ...(eligibilityCriteria.isElderly !== undefined && { isElderly: eligibilityCriteria.isElderly }),
+                  ...(eligibilityCriteria.isWoman !== undefined && { isWoman: eligibilityCriteria.isWoman }),
+              }
+            : undefined;
+
         if (patientData.cpf === '') {
             normalizedPatientData.cpf = null;
         }
@@ -389,7 +424,7 @@ export class PatientService {
             data: {
                 ...normalizedPatientData,
                 ...address,
-                ...eligibilityCriteria,
+                ...normalizedEligibilityData,
             },
             include: {
                 micro_areas: {
@@ -786,6 +821,7 @@ export class PatientService {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
 
 
 
