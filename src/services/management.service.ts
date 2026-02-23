@@ -655,7 +655,8 @@ export class ManagementService {
             data: {
                 name: data.name,
                 code: data.code,
-                description: data.description
+                description: data.description,
+                updatedAt: new Date()
             }
         });
 
@@ -728,7 +729,8 @@ export class ManagementService {
             data: {
                 name: data.name,
                 code: data.code,
-                description: data.description
+                description: data.description,
+                updatedAt: new Date()
             }
         });
 
