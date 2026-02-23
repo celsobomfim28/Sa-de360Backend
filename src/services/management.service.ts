@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export class ManagementService {
     async getGeneralStats(microAreaId?: string, agentId?: string) {
@@ -653,6 +654,7 @@ export class ManagementService {
         // Criar microárea
         const microArea = await prisma.micro_areas.create({
             data: {
+                id: randomUUID(),
                 name: data.name,
                 code: data.code,
                 description: data.description,
