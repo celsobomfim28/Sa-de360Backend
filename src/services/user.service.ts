@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -95,13 +96,15 @@ export class UserService {
 
         return await prisma.users.create({
             data: {
+                id: randomUUID(),
                 cpf: data.cpf,
                 fullName: data.fullName,
                 email: data.email,
                 password: hashedPassword,
                 role: data.role,
                 microAreaId: data.microAreaId === '' ? null : data.microAreaId,
-                isActive: true
+                isActive: true,
+                updatedAt: new Date()
             },
             select: {
                 id: true,
