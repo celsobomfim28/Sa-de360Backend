@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "patients"
+ALTER COLUMN "cns" DROP NOT NULL,
+ALTER COLUMN "motherName" DROP NOT NULL,
+ALTER COLUMN "zipCode" DROP NOT NULL,
+ALTER COLUMN "primaryPhone" DROP NOT NULL;

@@ -88,8 +88,8 @@ export const errorHandler = (
             return res.status(400).json({
                 error: {
                     code: 'FOREIGN_KEY_VIOLATION',
-                    message: `Referência inválida: ${field}`,
-                    details: { field, meta: prismaError.meta },
+                    message: 'Referência inválida para relacionamento obrigatório',
+                    details: { field },
                 },
             });
         }

@@ -6,6 +6,17 @@ export class PatientService {
     async create(data: CreatePatientInput, createdById: string) {
         const { address, eligibilityCriteria, ...patientData } = data;
 
+        const microArea = await prisma.micro_areas.findUnique({
+            where: { id: data.microAreaId },
+            select: { id: true },
+        });
+
+        if (!microArea) {
+            throw new AppError(400, 'Microárea inválida', 'INVALID_MICROAREA', {
+                field: 'microAreaId',
+            });
+        }
+
         // Remover formatação do CPF
         const cleanCpf = patientData.cpf ? patientData.cpf.replace(/\D/g, '') : undefined;
 
@@ -758,6 +769,7 @@ export class PatientService {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
 }
+
 
 
 

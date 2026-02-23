@@ -224,22 +224,22 @@ model micro_areas {
 model patients {
   id                         String                       @id
   cpf                        String?                      @unique
-  cns                        String                       @unique
+  cns                        String?                      @unique
   fullName                   String
   birthDate                  DateTime
   sex                        Sex
-  motherName                 String
+  motherName                 String?
   street                     String
   number                     String
   complement                 String?
   neighborhood               String
-  zipCode                    String
+  zipCode                    String?
   referencePoint             String?
   latitude                   Float?
   longitude                  Float?
   geocodedAt                 DateTime?
   microAreaId                String
-  primaryPhone               String
+  primaryPhone               String?
   secondaryPhone             String?
   email                      String?
   isChild                    Boolean                      @default(false)
