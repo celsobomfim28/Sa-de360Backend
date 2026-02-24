@@ -29,10 +29,21 @@ type CriticalPatientAlert = {
 };
 
 export class NotificationService {
+  private getLabExamDelegates() {
+    return {
+      labExam: prismaAny.lab_exams ?? prismaAny.labExam,
+      labExamRequest: prismaAny.lab_exam_requests ?? prismaAny.labExamRequest,
+    };
+  }
+
   private isLabExamModuleAvailable() {
+    const { labExam, labExamRequest } = this.getLabExamDelegates();
+
     return (
-      typeof prismaAny.labExam?.findMany === 'function' &&
-      typeof prismaAny.labExamRequest?.findMany === 'function'
+      typeof labExam?.findMany === 'function' &&
+      typeof labExam?.findUnique === 'function' &&
+      typeof labExam?.count === 'function' &&
+      typeof labExamRequest?.findMany === 'function'
     );
   }
 
@@ -207,7 +218,9 @@ export class NotificationService {
       return;
     }
 
-    const exam = await prismaAny.labExam.findUnique({
+    const { labExam } = this.getLabExamDelegates();
+
+    const exam = await labExam.findUnique({
       where: { id: examId },
       include: {
         request: {
@@ -239,7 +252,9 @@ export class NotificationService {
       return;
     }
 
-    const pendingExamsCount = await prismaAny.labExam.count({
+    const { labExam } = this.getLabExamDelegates();
+
+    const pendingExamsCount = await labExam.count({
       where: {
         resultDate: { not: null },
         evaluated: false,
@@ -672,6 +687,7 @@ export class NotificationService {
     };
   }
 }
+
 
 
 
