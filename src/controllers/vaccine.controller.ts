@@ -39,7 +39,7 @@ export class VaccineController {
 
       // Validar acesso de microárea para ACS
       if (user.role === 'ACS') {
-        const { prisma } = await import('../config/database');
+        const { prisma } = await import('../config/database.js');
         
         const patient = await prisma.patients.findUnique({
           where: { id: patientId },
@@ -85,7 +85,7 @@ export class VaccineController {
 
       // Validar acesso de microárea para ACS
       if (user.role === 'ACS') {
-        const { prisma } = await import('../config/database');
+        const { prisma } = await import('../config/database.js');
         
         const patient = await prisma.patients.findUnique({
           where: { id: validatedData.patientId },
@@ -137,7 +137,7 @@ export class VaccineController {
 
       // Validar acesso de microárea para ACS
       if (user.role === 'ACS') {
-        const { prisma } = await import('../config/database');
+        const { prisma } = await import('../config/database.js');
         
         const patient = await prisma.patients.findUnique({
           where: { id: patientId },
@@ -182,7 +182,7 @@ export class VaccineController {
 
       // Validar acesso de microárea para ACS
       if (user.role === 'ACS') {
-        const { prisma } = await import('../config/database');
+        const { prisma } = await import('../config/database.js');
         
         const patient = await prisma.patients.findUnique({
           where: { id: patientId },
