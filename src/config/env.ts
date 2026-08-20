@@ -4,7 +4,8 @@ dotenv.config();
 
 export const config = {
     env: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT || '3000', 10),
+    port: process.env.PORT ? Number(process.env.PORT) : 3000,
+    //port: parseInt(process.env.PORT || '3000', 10),
     apiVersion: process.env.API_VERSION || 'v1',
 
     database: {
@@ -27,23 +28,36 @@ export const config = {
     },
 
     cors: {
-        origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(url => url.trim()),
-    },
+    origin: process.env.CORS_ORIGIN 
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) 
+      : ['http://localhost:3000'],
+  },
 
-    rateLimit: {
+    /*cors: {
+        origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(url => url.trim()),
+    },*/
+rateLimit: {
+    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+    maxRequests: Number(process.env.RATE_LIMIT_MAX) || 100,
+  },
+    /*rateLimit: {
         windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
         maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
-    },
+    },*/
 
     logging: {
         level: process.env.LOG_LEVEL || 'info',
     },
-
-    notifications: {
+notifications: {
+    autoRunEnabled: process.env.NOTIFICATIONS_AUTO_RUN === 'true',
+    startupDelayMs: Number(process.env.NOTIFICATIONS_STARTUP_DELAY_MS) || 5000,
+    intervalMs: Number(process.env.NOTIFICATIONS_INTERVAL_MS) || 3600000,
+  },
+    /*notifications: {
         autoRunEnabled: process.env.NOTIFICATIONS_AUTO_RUN_ENABLED !== 'false',
         intervalMs: parseInt(process.env.NOTIFICATIONS_INTERVAL_MS || '900000', 10), // 15 min
         startupDelayMs: parseInt(process.env.NOTIFICATIONS_STARTUP_DELAY_MS || '15000', 10), // 15s
-    },
+    },*/
 } as const;
 
 // Validação de variáveis obrigatórias (não rodar em teste se possível, ou garantir mock)

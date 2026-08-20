@@ -6,7 +6,6 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
-    port: 10000
     autoDeploy: true
     envVars:
       - key: NODE_ENV
