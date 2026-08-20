@@ -17,8 +17,24 @@ const app: Application = express();
 app.use(helmet());
 
 // CORS
+const isAllowedOrigin = (origin: string | undefined): boolean => {
+    if (!origin) return false;
+
+    // Origem listada explicitamente em CORS_ORIGIN
+    if (config.cors.origin.includes(origin)) return true;
+
+    // Qualquer subdomínio de vercel.app (previews do Vercel)
+    const vercelAppHostname = 'vercel.app';
+    try {
+        const hostname = new URL(origin).hostname;
+        return hostname === vercelAppHostname || hostname.endsWith(`.${vercelAppHostname}`);
+    } catch {
+        return false;
+    }
+};
+
 app.use(cors({
-    origin: config.cors.origin,
+    origin: isAllowedOrigin,
     credentials: true,
 }));
 
