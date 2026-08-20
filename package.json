@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:reset-password": "ts-node prisma/reset-password.ts",
     "prisma:seed-vaccines": "ts-node prisma/seed-vaccines.ts",
     "prisma:triggers": "ts-node prisma/apply-triggers.ts",
     "geocode": "ts-node geocode-patients.ts",
