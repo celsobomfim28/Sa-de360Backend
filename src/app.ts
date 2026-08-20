@@ -80,6 +80,10 @@ app.get('/health', (_req, res) => {
     });
 });
 
+app.get('/', (_req, res) => {
+    res.json({ status: 'ok', service: 'saude360-backend' });
+});
+
 // ============================================
 // ROTAS DA API
 // ============================================
