@@ -64,7 +64,7 @@ const stopNotificationScheduler = () => {
 // INICIALIZAÇÃO DO SERVIDOR
 // ============================================
 
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, () => {
     logger.info(`🚀 Servidor rodando na porta ${PORT}`);
     logger.info(`📝 Ambiente: ${config.env}`);
     logger.info(`🔗 API: http://localhost:${PORT}/${config.apiVersion}`);
