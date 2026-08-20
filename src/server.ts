@@ -3,6 +3,7 @@ import { config } from './config/env';
 import { logger } from './utils/logger';
 import { prisma } from './config/database';
 import { NotificationService } from './services/notification.service';
+import { PatientAgeOutService } from './services/patientAgeOut.service';
 
 // Garante fallback direto para process.env.PORT se config.port falhar
 const PORT = process.env.PORT ? Number(process.env.PORT) : (config.port || 10000);
@@ -62,6 +63,61 @@ const stopNotificationScheduler = () => {
     }
 };
 
+const patientAgeOutService = new PatientAgeOutService();
+let patientAgeOutInterval: NodeJS.Timeout | null = null;
+let patientAgeOutStartupTimeout: NodeJS.Timeout | null = null;
+let patientAgeOutJobRunning = false;
+
+const runPatientAgeOutJob = async () => {
+    if (patientAgeOutJobRunning) {
+        logger.warn('⏭️ Job de saída por idade já está em execução. Ignorando novo disparo.');
+        return;
+    }
+
+    patientAgeOutJobRunning = true;
+
+    try {
+        const result = await patientAgeOutService.runAgeOut();
+        logger.info('👶🧓 Job de saída por idade finalizado', result);
+    } catch (error) {
+        logger.error('❌ Erro no job automático de saída por idade', error);
+    } finally {
+        patientAgeOutJobRunning = false;
+    }
+};
+
+const startPatientAgeOutScheduler = () => {
+    if (!config.patientAgeOut?.autoRunEnabled) {
+        logger.info('🚫 Agendador de saída por idade desabilitado por configuração');
+        return;
+    }
+
+    logger.info('⏱️ Agendador de saída por idade iniciado', {
+        startupDelayMs: config.patientAgeOut.startupDelayMs,
+        intervalMs: config.patientAgeOut.intervalMs,
+    });
+
+    patientAgeOutStartupTimeout = setTimeout(() => {
+        void runPatientAgeOutJob();
+    }, config.patientAgeOut.startupDelayMs);
+
+    patientAgeOutInterval = setInterval(() => {
+        void runPatientAgeOutJob();
+    }, config.patientAgeOut.intervalMs);
+};
+
+const stopPatientAgeOutScheduler = () => {
+    if (patientAgeOutStartupTimeout) {
+        clearTimeout(patientAgeOutStartupTimeout);
+        patientAgeOutStartupTimeout = null;
+    }
+
+    if (patientAgeOutInterval) {
+        clearInterval(patientAgeOutInterval);
+        patientAgeOutInterval = null;
+    }
+};
+
 // ============================================
 // INICIALIZAÇÃO DO SERVIDOR
 // ============================================
@@ -72,6 +128,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`🔗 API: http://0.0.0.0:${PORT}/${config.apiVersion}`);
     logger.info(`💚 Health Check: http://0.0.0.0:${PORT}/health`);
     startNotificationScheduler();
+    startPatientAgeOutScheduler();
 });
 
 // ============================================
@@ -84,6 +141,7 @@ const gracefulShutdown = async (signal: string) => {
     server.close(async () => {
         logger.info('Servidor HTTP fechado');
         stopNotificationScheduler();
+        stopPatientAgeOutScheduler();
 
         // Desconectar do banco de dados
         await prisma.$disconnect();

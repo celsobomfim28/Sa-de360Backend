@@ -53,6 +53,11 @@ notifications: {
     startupDelayMs: Number(process.env.NOTIFICATIONS_STARTUP_DELAY_MS) || 5000,
     intervalMs: Number(process.env.NOTIFICATIONS_INTERVAL_MS) || 3600000,
   },
+  patientAgeOut: {
+    autoRunEnabled: process.env.PATIENT_AGE_OUT_ENABLED === 'true',
+    startupDelayMs: Number(process.env.PATIENT_AGE_OUT_STARTUP_DELAY_MS) || 60000,
+    intervalMs: Number(process.env.PATIENT_AGE_OUT_INTERVAL_MS) || 86400000, // 24h
+  },
     /*notifications: {
         autoRunEnabled: process.env.NOTIFICATIONS_AUTO_RUN_ENABLED !== 'false',
         intervalMs: parseInt(process.env.NOTIFICATIONS_INTERVAL_MS || '900000', 10), // 15 min
