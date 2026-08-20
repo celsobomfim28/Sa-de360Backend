@@ -2,6 +2,7 @@ import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { deriveAgeEligibility } from '../utils/eligibility';
 
 export class ManagementService {
     async getGeneralStats(microAreaId?: string, agentId?: string) {
@@ -25,6 +26,10 @@ export class ManagementService {
 
         const totalPatients = await prisma.patients.count({ where });
 
+        const now = new Date();
+        const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+        const sixtyYearsAgo = new Date(now.getFullYear() - 60, now.getMonth(), now.getDate());
+
         // Programs counts
         const [
             diabetesCount,
@@ -35,14 +40,28 @@ export class ManagementService {
         ] = await Promise.all([
             prisma.patients.count({ where: { ...where, hasDiabetes: true } }),
             prisma.patients.count({ where: { ...where, hasHypertension: true } }),
-            prisma.patients.count({ where: { ...where, isElderly: true } }),
+            prisma.patients.count({ where: { ...where, birthDate: { lte: sixtyYearsAgo } } }),
             prisma.patients.count({ where: { ...where, isPregnant: true } }),
-            prisma.patients.count({ where: { ...where, isChild: true } })
+            prisma.patients.count({ where: { ...where, birthDate: { gt: twoYearsAgo } } })
         ]);
 
         // Indicator summaries
         const whereIndicator: any = effectiveMicroAreaId ? { patients: { microAreaId: effectiveMicroAreaId } } : {};
         const wherePrenatalIndicator: any = effectiveMicroAreaId ? { prenatal_data: { patients: { microAreaId: effectiveMicroAreaId } } } : {};
+        const whereChildcareIndicator: any = {
+            ...whereIndicator,
+            patients: {
+                ...(whereIndicator.patients || {}),
+                birthDate: { gt: twoYearsAgo },
+            },
+        };
+        const whereElderlyIndicator: any = {
+            ...whereIndicator,
+            patients: {
+                ...(whereIndicator.patients || {}),
+                birthDate: { lte: sixtyYearsAgo },
+            },
+        };
 
         const [
             diabetesIndicators,
@@ -68,12 +87,12 @@ export class ManagementService {
             }),
             prisma.childcare_indicators.groupBy({
                 by: ['b1Status'],
-                where: whereIndicator,
+                where: whereChildcareIndicator,
                 _count: true
             }),
             prisma.elderly_indicators.groupBy({
                 by: ['f1Status'],
-                where: whereIndicator,
+                where: whereElderlyIndicator,
                 _count: true
             })
         ]);
@@ -268,6 +287,7 @@ export class ManagementService {
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                 age--;
             }
+            const ageMonths = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
 
             // Coletar todos os indicadores críticos (RED) e de atenção (YELLOW)
             const criticalIndicators: string[] = [];
@@ -305,11 +325,11 @@ export class ManagementService {
                 if (p.childcare_indicators.b3Status === 'YELLOW') criticalIndicators.push('B3');
                 if (p.childcare_indicators.b4Status === 'YELLOW') criticalIndicators.push('B4');
                 if (p.childcare_indicators.b5Status === 'YELLOW') criticalIndicators.push('B5');
-            } else if (p.isChild) {
+            } else if (deriveAgeEligibility(p.birthDate, p.sex).isChild) {
                 // Criança sem indicador = nunca acompanhada
                 criticalIndicators.push('B1');
             }
-            
+
             // Diabetes (D1-D6)
             if (p.diabetes_indicators) {
                 if (p.diabetes_indicators.d1Status === 'RED') criticalIndicators.push('D1');
@@ -362,6 +382,7 @@ export class ManagementService {
                 id: p.id,
                 fullName: p.fullName,
                 age,
+                ageMonths,
                 microArea: p.micro_areas.name,
                 criticalIndicators
             };
@@ -424,6 +445,25 @@ export class ManagementService {
         const where: any = effectiveMicroAreaId ? { patients: { microAreaId: effectiveMicroAreaId } } : {};
         const wherePrenatal: any = effectiveMicroAreaId ? { prenatal_data: { patients: { microAreaId: effectiveMicroAreaId } } } : {};
 
+        const now = new Date();
+        const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+        const sixtyYearsAgo = new Date(now.getFullYear() - 60, now.getMonth(), now.getDate());
+
+        const whereChildcare: any = {
+            ...where,
+            patients: {
+                ...(where.patients || {}),
+                birthDate: { gt: twoYearsAgo },
+            },
+        };
+        const whereElderly: any = {
+            ...where,
+            patients: {
+                ...(where.patients || {}),
+                birthDate: { lte: sixtyYearsAgo },
+            },
+        };
+
         // 1. Diabetes Indicators (D1)
         const diabetesStats = await prisma.diabetes_indicators.groupBy({
             by: ['d1Status'],
@@ -469,35 +509,35 @@ export class ManagementService {
         // 7. Elderly - Polypharmacy (F1)
         const elderlyF1Stats = await prisma.elderly_indicators.groupBy({
             by: ['f1Status'],
-            where,
+            where: whereElderly,
             _count: true
         });
 
         // 8. Elderly - IVCF Assessment (F2)
         const elderlyF2Stats = await prisma.elderly_indicators.groupBy({
             by: ['f2Status'],
-            where,
+            where: whereElderly,
             _count: true
         });
 
         // 9. Childcare - First Consultation (B1)
         const childcareB1Stats = await prisma.childcare_indicators.groupBy({
             by: ['b1Status'],
-            where,
+            where: whereChildcare,
             _count: true
         });
 
         // 10. Childcare - 9 Consultations (B2)
         const childcareB2Stats = await prisma.childcare_indicators.groupBy({
             by: ['b2Status'],
-            where,
+            where: whereChildcare,
             _count: true
         });
 
         // 11. Childcare - Vaccines (B5)
         const childcareB5Stats = await prisma.childcare_indicators.groupBy({
             by: ['b5Status'],
-            where,
+            where: whereChildcare,
             _count: true
         });
 
@@ -539,8 +579,8 @@ export class ManagementService {
         };
 
         // Buscar todos os indicadores de crianças
-        const childcareB3Stats = await prisma.childcare_indicators.groupBy({ by: ['b3Status'], where, _count: true });
-        const childcareB4Stats = await prisma.childcare_indicators.groupBy({ by: ['b4Status'], where, _count: true });
+        const childcareB3Stats = await prisma.childcare_indicators.groupBy({ by: ['b3Status'], where: whereChildcare, _count: true });
+        const childcareB4Stats = await prisma.childcare_indicators.groupBy({ by: ['b4Status'], where: whereChildcare, _count: true });
 
         // Buscar todos os indicadores de gestantes
         const prenatalC2Stats = await prisma.prenatal_indicators.groupBy({ by: ['c2Status'], where: wherePrenatal, _count: true });
@@ -561,10 +601,10 @@ export class ManagementService {
         const hypertensionE4Stats = await prisma.hypertension_indicators.groupBy({ by: ['e4Status'], where, _count: true });
 
         // Buscar todos os indicadores de idosos
-        const elderlyAStats = await prisma.elderly_indicators.groupBy({ by: ['aStatus'], where, _count: true });
-        const elderlyBStats = await prisma.elderly_indicators.groupBy({ by: ['bStatus'], where, _count: true });
-        const elderlyC3Stats = await prisma.elderly_indicators.groupBy({ by: ['c3Status'], where, _count: true });
-        const elderlyDStats = await prisma.elderly_indicators.groupBy({ by: ['dStatus'], where, _count: true });
+        const elderlyAStats = await prisma.elderly_indicators.groupBy({ by: ['aStatus'], where: whereElderly, _count: true });
+        const elderlyBStats = await prisma.elderly_indicators.groupBy({ by: ['bStatus'], where: whereElderly, _count: true });
+        const elderlyC3Stats = await prisma.elderly_indicators.groupBy({ by: ['c3Status'], where: whereElderly, _count: true });
+        const elderlyDStats = await prisma.elderly_indicators.groupBy({ by: ['dStatus'], where: whereElderly, _count: true });
 
         // Buscar todos os indicadores de mulher
         const womanBStats = await prisma.woman_health_indicators.groupBy({ by: ['bStatus'], where, _count: true });

@@ -2,6 +2,7 @@ import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { CreatePatientInput, UpdatePatientInput } from '../validators/patient.validator';
 import { randomUUID } from 'crypto';
+import { getAgeInMonths, deriveAgeEligibility } from '../utils/eligibility';
 
 export class PatientService {
     async create(data: CreatePatientInput, createdById: string) {
@@ -258,10 +259,13 @@ export class PatientService {
 
         // Filtro por grupo de elegibilidade
         if (eligibilityGroup) {
+            const now = new Date();
             switch (eligibilityGroup) {
-                case 'CHILD':
-                    where.isChild = true;
+                case 'CHILD': {
+                    const minBirthDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+                    where.birthDate = { ...where.birthDate, gt: minBirthDate };
                     break;
+                }
                 case 'PREGNANT':
                     where.isPregnant = true;
                     break;
@@ -274,12 +278,18 @@ export class PatientService {
                 case 'DIABETES':
                     where.hasDiabetes = true;
                     break;
-                case 'ELDERLY':
-                    where.isElderly = true;
+                case 'ELDERLY': {
+                    const maxBirthDate = new Date(now.getFullYear() - 60, now.getMonth(), now.getDate());
+                    where.birthDate = { ...where.birthDate, lte: maxBirthDate };
                     break;
-                case 'WOMAN':
-                    where.isWoman = true;
+                }
+                case 'WOMAN': {
+                    const minWomanBirthDate = new Date(now.getFullYear() - 69, now.getMonth(), now.getDate());
+                    const maxWomanBirthDate = new Date(now.getFullYear() - 9, now.getMonth(), now.getDate());
+                    where.birthDate = { ...where.birthDate, gte: minWomanBirthDate, lte: maxWomanBirthDate };
+                    where.sex = 'FEMALE';
                     break;
+                }
             }
         }
 
@@ -663,15 +673,22 @@ export class PatientService {
         const birthDate = new Date(patient.birthDate);
         const today = new Date();
         const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+        const ageMonths = getAgeInMonths(patient.birthDate, today);
+
+        // Elegibilidade derivada da data de nascimento (fonte da verdade)
+        const derived = deriveAgeEligibility(patient.birthDate, patient.sex, today);
+        const isChild = derived.isChild || patient.isChild;
+        const isElderly = derived.isElderly || patient.isElderly;
+        const isWoman = derived.isWoman || patient.isWoman;
 
         const eligibilityGroups: string[] = [];
-        if (patient.isChild) eligibilityGroups.push('CHILD');
+        if (isChild) eligibilityGroups.push('CHILD');
         if (patient.isPregnant) eligibilityGroups.push('PREGNANT');
         if (patient.isPostpartum) eligibilityGroups.push('POSTPARTUM');
         if (patient.hasHypertension) eligibilityGroups.push('HYPERTENSION');
         if (patient.hasDiabetes) eligibilityGroups.push('DIABETES');
-        if (patient.isElderly) eligibilityGroups.push('ELDERLY');
-        if (patient.isWoman) eligibilityGroups.push('WOMAN');
+        if (isElderly) eligibilityGroups.push('ELDERLY');
+        if (isWoman) eligibilityGroups.push('WOMAN');
 
         return {
             id: patient.id,
@@ -680,6 +697,7 @@ export class PatientService {
             fullName: patient.fullName,
             birthDate: patient.birthDate,
             age,
+            ageMonths,
             sex: patient.sex,
             motherName: patient.motherName,
             address: {
@@ -696,13 +714,13 @@ export class PatientService {
             email: patient.email,
             eligibilityGroups,
             // Campos de elegibilidade individuais
-            isChild: patient.isChild,
+            isChild,
             isPregnant: patient.isPregnant,
             isPostpartum: patient.isPostpartum,
             hasHypertension: patient.hasHypertension,
             hasDiabetes: patient.hasDiabetes,
-            isElderly: patient.isElderly,
-            isWoman: patient.isWoman,
+            isElderly,
+            isWoman,
             hypertensionDiagnosisDate: patient.hypertensionDiagnosisDate,
             diabetesDiagnosisDate: patient.diabetesDiagnosisDate,
             prenatalData: patient.prenatal_data,
@@ -723,15 +741,22 @@ export class PatientService {
         const birthDate = new Date(patient.birthDate);
         const today = new Date();
         const age = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+        const ageMonths = getAgeInMonths(patient.birthDate, today);
+
+        // Elegibilidade derivada da data de nascimento (fonte da verdade)
+        const derived = deriveAgeEligibility(patient.birthDate, patient.sex, today);
+        const isChild = derived.isChild || patient.isChild;
+        const isElderly = derived.isElderly || patient.isElderly;
+        const isWoman = derived.isWoman || patient.isWoman;
 
         const eligibilityGroups: string[] = [];
-        if (patient.isChild) eligibilityGroups.push('CHILD');
+        if (isChild) eligibilityGroups.push('CHILD');
         if (patient.isPregnant) eligibilityGroups.push('PREGNANT');
         if (patient.isPostpartum) eligibilityGroups.push('POSTPARTUM');
         if (patient.hasHypertension) eligibilityGroups.push('HYPERTENSION');
         if (patient.hasDiabetes) eligibilityGroups.push('DIABETES');
-        if (patient.isElderly) eligibilityGroups.push('ELDERLY');
-        if (patient.isWoman) eligibilityGroups.push('WOMAN');
+        if (isElderly) eligibilityGroups.push('ELDERLY');
+        if (isWoman) eligibilityGroups.push('WOMAN');
 
         // Calcular resumo de indicadores
         let red = 0, yellow = 0, green = 0;
@@ -800,6 +825,7 @@ export class PatientService {
             id: patient.id,
             fullName: patient.fullName,
             age,
+            ageMonths,
             birthDate: patient.birthDate,
             cpf: this.formatCpf(patient.cpf),
             microArea: patient.micro_areas,
