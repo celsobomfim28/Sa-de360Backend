@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
-    env: process.env.NODE_ENV || 'development',
+    env: process.env.NODE_ENV || 'production',
     port: parseInt(process.env.PORT || '3000', 10),
     apiVersion: process.env.API_VERSION || 'v1',
 
