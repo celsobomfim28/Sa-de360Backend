@@ -831,12 +831,27 @@ export class PatientService {
             microArea: patient.micro_areas,
             eligibilityGroups,
             lastConsultation: null,
+            deletedAt: patient.deletedAt,
+            inactiveReason: this.getInactiveReason(patient),
             indicatorsSummary: {
                 green,
                 yellow,
                 red,
             },
         };
+    }
+
+    private getInactiveReason(patient: any): 'AGE_OUT' | 'MANUAL' | null {
+        if (!patient.deletedAt) return null;
+
+        const birth = new Date(patient.birthDate);
+        const today = new Date();
+        const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+        const tenYearsAgo = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+        const wasChild = patient.isChild === true || Boolean(patient.childcare_indicators);
+        const agedOut = wasChild && birth <= twoYearsAgo && birth > tenYearsAgo;
+
+        return agedOut ? 'AGE_OUT' : 'MANUAL';
     }
 
     private formatCpf(cpf?: string | null): string | null {
