@@ -4,7 +4,9 @@ import { logger } from './utils/logger';
 import { prisma } from './config/database';
 import { NotificationService } from './services/notification.service';
 
-const PORT = config.port;
+// Garante fallback direto para process.env.PORT se config.port falhar
+const PORT = process.env.PORT ? Number(process.env.PORT) : (config.port || 10000);
+
 const notificationService = new NotificationService();
 let notificationInterval: NodeJS.Timeout | null = null;
 let notificationStartupTimeout: NodeJS.Timeout | null = null;
@@ -29,7 +31,7 @@ const runAutomaticNotificationsJob = async () => {
 };
 
 const startNotificationScheduler = () => {
-    if (!config.notifications.autoRunEnabled) {
+    if (!config.notifications?.autoRunEnabled) {
         logger.info('🔕 Agendador automático de notificações desabilitado por configuração');
         return;
     }
@@ -64,11 +66,11 @@ const stopNotificationScheduler = () => {
 // INICIALIZAÇÃO DO SERVIDOR
 // ============================================
 
-const server = app.listen(PORT,'0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 Servidor rodando na porta ${PORT}`);
     logger.info(`📝 Ambiente: ${config.env}`);
-    logger.info(`🔗 API: http://localhost:${PORT}/${config.apiVersion}`);
-    logger.info(`💚 Health Check: http://localhost:${PORT}/health`);
+    logger.info(`🔗 API: http://0.0.0.0:${PORT}/${config.apiVersion}`);
+    logger.info(`💚 Health Check: http://0.0.0.0:${PORT}/health`);
     startNotificationScheduler();
 });
 
@@ -101,17 +103,15 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // ============================================
-// TRATAMENTO DE ERROS NÃO CAPTURADOS
+// TRATAMENTO DE ERROS NÃO CAPTURADOS (Sem derrubar a aplicação)
 // ============================================
 
 process.on('unhandledRejection', (reason: any) => {
-    logger.error('Unhandled Rejection:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
+    logger.error('Unhandled Rejection capturado (sem desligar servidor):', reason);
 });
 
 process.on('uncaughtException', (error: Error) => {
-    logger.error('Uncaught Exception:', error);
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
+    logger.error('Uncaught Exception capturado:', error);
 });
 
 export default server;

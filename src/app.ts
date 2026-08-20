@@ -10,27 +10,55 @@ import routes from './routes';
 const app: Application = express();
 
 // ============================================
-// MIDDLEWARES DE SEGURANÇA
+// 1. HEALTH CHECK (No topo para não ser bloqueado por CORS/Rate Limit)
 // ============================================
 
-// Helmet - Headers de segurança
+app.get('/', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'saude360-backend' });
+});
+
+app.get('/health', (_req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: config.env,
+    });
+});
+
+// ============================================
+// 2. MIDDLEWARES DE SEGURANÇA
+// ============================================
+
 app.use(helmet());
 
-// CORS
-const isAllowedOrigin = (origin: string | undefined): boolean => {
-    if (!origin) return false;
+// CORS corrigido para aceitar requisições sem 'Origin' (Health checks, Postman, Curl)
+const isAllowedOrigin = (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+) => {
+    // Permite requisições sem 'origin' (Health checks do Render, Server-to-Server, ferramentas CLI)
+    if (!origin) {
+        return callback(null, true);
+    }
 
     // Origem listada explicitamente em CORS_ORIGIN
-    if (config.cors.origin.includes(origin)) return true;
+    if (config.cors.origin.includes(origin)) {
+        return callback(null, true);
+    }
 
-    // Qualquer subdomínio de vercel.app (previews do Vercel)
+    // Subdomínios vercel.app
     const vercelAppHostname = 'vercel.app';
     try {
         const hostname = new URL(origin).hostname;
-        return hostname === vercelAppHostname || hostname.endsWith(`.${vercelAppHostname}`);
+        if (hostname === vercelAppHostname || hostname.endsWith(`.${vercelAppHostname}`)) {
+            return callback(null, true);
+        }
     } catch {
-        return false;
+        // falha ao analisar URL
     }
+
+    return callback(new Error('Bloqueado por CORS'), false);
 };
 
 app.use(cors({
@@ -49,15 +77,11 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ============================================
-// MIDDLEWARES DE PARSING
+// 3. MIDDLEWARES DE PARSING & LOGGING
 // ============================================
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// ============================================
-// LOGGING DE REQUISIÇÕES
-// ============================================
 
 app.use((req, _res, next) => {
     logger.info(`${req.method} ${req.path}`, {
@@ -68,37 +92,12 @@ app.use((req, _res, next) => {
 });
 
 // ============================================
-// HEALTH CHECK
-// ============================================
-
-app.get('/health', (_req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: config.env,
-    });
-});
-
-app.get('/', (_req, res) => {
-    res.json({ status: 'ok', service: 'saude360-backend' });
-});
-
-// ============================================
-// ROTAS DA API
+// 4. ROTAS DA API & TRATAMENTO DE ERROS
 // ============================================
 
 app.use(`/${config.apiVersion}`, routes);
 
-// ============================================
-// TRATAMENTO DE ERROS
-// ============================================
-
 app.use(errorHandler);
-
-// ============================================
-// ROTA 404
-// ============================================
 
 app.use((req, res) => {
     res.status(404).json({
